@@ -1,4 +1,5 @@
 #include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_log.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_timer.h>
 #include <stdbool.h>
@@ -10,11 +11,13 @@
 #include "Consts.h"
 #include "Input.h"
 #include "Palette.h"
+#include "UI.h"
 
 #include "states/GameState.h"
 #include "states/State.h"
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
@@ -47,6 +50,15 @@ int main(int argc, char *argv[])
         SDL_DestroyWindow(window);
         SDL_Quit();
     }
+
+    if (TTF_Init() == -1)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "Failed to initialize TTF: %s", TTF_GetError());
+        SDL_Quit();
+    }
+
+    UiInitialize();
 
     // actual game stuff happens within the context of gameMachine, and nested
     // state machines

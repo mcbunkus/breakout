@@ -7,4 +7,6 @@
 #define WINDOW_PADDING 4
 #define BLOCK_PADDING 4
 
+#define GAME_FONT "assets/AldotheApache.ttf"
+
 #endif // _GAMB_CONSTS
