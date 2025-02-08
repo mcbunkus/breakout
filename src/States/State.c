@@ -31,17 +31,17 @@ StateMachine *StateMachineCreate(State *initialState)
 
 void StateMachineStart(StateMachine *machine)
 {
-    if (machine->CurrentState && machine->CurrentState->OnEnter)
+    if (machine->CurrentState && machine->CurrentState->Enter)
     {
-        machine->CurrentState->OnEnter();
+        machine->CurrentState->Enter();
     }
 }
 
 void StateMachineStop(StateMachine *machine)
 {
-    if (machine->CurrentState && machine->CurrentState->OnExit)
+    if (machine->CurrentState && machine->CurrentState->Exit)
     {
-        machine->CurrentState->OnExit();
+        machine->CurrentState->Exit();
     }
 }
 
@@ -54,16 +54,16 @@ void StateMachineTransitionTo(StateMachine *machine, State *state)
         SDL_Quit();
     }
 
-    if (machine->CurrentState && machine->CurrentState->OnExit)
+    if (machine->CurrentState && machine->CurrentState->Exit)
     {
-        machine->CurrentState->OnExit();
+        machine->CurrentState->Exit();
     }
 
     machine->CurrentState = state;
 
-    if (machine->CurrentState->OnEnter)
+    if (machine->CurrentState->Enter)
     {
-        machine->CurrentState->OnEnter();
+        machine->CurrentState->Enter();
     }
 }
 

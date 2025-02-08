@@ -8,8 +8,8 @@
 
 typedef struct
 {
-    void (*OnEnter)(void);
-    void (*OnExit)(void);
+    void (*Enter)(void);
+    void (*Exit)(void);
     void (*Update)(float delta);
     void (*Draw)(SDL_Renderer *renderer);
     void (*HandleInput)(const Input *renderer);
