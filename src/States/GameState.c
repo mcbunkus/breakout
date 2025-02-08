@@ -103,16 +103,16 @@ static SDL_Renderer *MainRenderer = NULL;
 //
 
 static void CountdownStateUpdate(float delta);
-static void CountdownStateOnEnter();
+static void CountdownStateEnter();
 static void CountdownStateDraw(SDL_Renderer *renderer);
 
-static void PlayStateOnEnter();
-static void PlayStateOnExit();
+static void PlayStateEnter();
+static void PlayStateEnter();
 static void PlayStateUpdate(float delta);
 static void PlayStateDraw(SDL_Renderer *renderer);
 static void PlayStateHandleInput(const Input *input);
 
-static void ReloadBlocksStateOnEnter();
+static void ReloadBlocksStateEnter();
 static void ReloadBlocksStateDraw(SDL_Renderer *renderer);
 static void ReloadBlocksStateUpdate(float delta);
 
@@ -135,13 +135,13 @@ static void PlayerReset();
 //
 
 static State CountdownState = {
-    .Enter = CountdownStateOnEnter,
+    .Enter = CountdownStateEnter,
     .Update = CountdownStateUpdate,
     .Draw = CountdownStateDraw,
 };
 
 static State PlayState = {
-    .Enter = PlayStateOnEnter,
+    .Enter = PlayStateEnter,
     .Draw = PlayStateDraw,
     .HandleInput = PlayStateHandleInput,
     .Update = PlayStateUpdate,
@@ -151,10 +151,10 @@ static State PlayState = {
 
 static GameReloadState ReloadState = {
 
-    .BlockIndex = 0,
+    .BlockIndex = 0, // only needed in the reload state context
     .State =
         {
-            .Enter = ReloadBlocksStateOnEnter,
+            .Enter = ReloadBlocksStateEnter,
             .Update = ReloadBlocksStateUpdate,
 
             // we can reuse this function, drawing
@@ -241,7 +241,7 @@ static void PlayerReset()
 //
 //
 
-static void ReloadBlocksStateOnEnter() { ReloadState.BlockIndex = 0; }
+static void ReloadBlocksStateEnter() { ReloadState.BlockIndex = 0; }
 
 static void ReloadBlocksStateUpdate(float delta)
 {
@@ -285,7 +285,7 @@ static void ReloadBlocksStateDraw(SDL_Renderer *renderer)
 //
 //
 
-static void CountdownStateOnEnter()
+static void CountdownStateEnter()
 {
     BallReset();
     PlayerReset();
@@ -328,7 +328,7 @@ static void CountdownStateDraw(SDL_Renderer *renderer)
 //
 //
 
-static void PlayStateOnEnter()
+static void PlayStateEnter()
 {
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Entered PlayState");
     ball.Direction = Vec2RandomUnit(-3 * M_PI / 4, -M_PI / 4);
@@ -503,16 +503,16 @@ static void PlayStateHandleInput(const Input *input)
 //
 //
 
-static void GameStateOnEnter()
+static void GameStateEnter()
 {
 
     // setting up the blocks, UI, etc
 
     countdown.Label =
-        LabelInit(MainRenderer, "3", &SquareFont, 96, WINDOW_WIDTH / 2.0f,
+        LabelInit(MainRenderer, "3", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
                   WINDOW_HEIGHT / 2.0f, LabelCenter, PaletteForeground);
 
-    score.Label = LabelInit(MainRenderer, "3", &SquareFont, 32,
+    score.Label = LabelInit(MainRenderer, "3", &FontSquare, 32,
                             WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
                             WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
                             LabelTopLeft, PaletteForeground);
@@ -540,7 +540,7 @@ static void GameStateOnEnter()
                 .Bounds = {
                     .x = xpos, .y = ypos, .w = blockWidth, .h = blockHeight}};
 
-            blocks.Alive[i] = false;
+            blocks.Alive[i] = true;
 
             if (row < NROWS / 4)
             {
@@ -588,7 +588,7 @@ static void GameStateHandleEvents(SDL_Event *ev)
     StateMachineHandleEvents(GameStateMachine, ev);
 }
 
-static void GameStateOnExit()
+static void GameStateExit()
 {
     StateMachineStop(GameStateMachine);
     LabelDestroy(&(countdown.Label));
@@ -598,8 +598,8 @@ static void GameStateOnExit()
 State GameStateInit(SDL_Renderer *_renderer)
 {
     MainRenderer = _renderer;
-    return (State){.Enter = GameStateOnEnter,
-                   .Exit = GameStateOnExit,
+    return (State){.Enter = GameStateEnter,
+                   .Exit = GameStateExit,
                    .Update = GameStateUpdate,
                    .Draw = GameStateDraw,
                    .HandleInput = GameStateHandleInput,

@@ -3,6 +3,6 @@
 
 #include "Font.h"
 
-extern Font SquareFont;
+extern Font FontSquare;
 
 #endif // !_GAMB_FONTS_SQUARE_H
