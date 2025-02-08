@@ -10,11 +10,13 @@ find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2main)
 find_package(SDL2_ttf REQUIRED)
 
 add_executable(gamb 
+  src/Fonts/Square.c
+  src/Label.c
+  src/Rectangle.c
+  src/States/GameState.c 
+  src/States/State.c 
   src/main.c 
-  src/states/State.c 
-  src/states/GameState.c 
-  src/Collision.c
-  src/UI.c)
+)
 
 if (TARGET SDL2::SDL2main)
   target_link_libraries(gamb PRIVATE SDL2::SDL2main)
@@ -23,8 +25,3 @@ endif()
 target_include_directories(gamb PRIVATE src)
 target_link_libraries(gamb PRIVATE SDL2 SDL2_ttf m)
 
-# add_custom_command(
-#   TARGET gamb POST_BUILD
-#   COMMAND ${CMAKE_COMMAND} -E
-#   copy_
-# )
