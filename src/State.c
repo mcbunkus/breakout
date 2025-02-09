@@ -1,5 +1,6 @@
 
 #include "State.h"
+#include "Util.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_log.h>
 #include <stdlib.h>
@@ -61,7 +62,7 @@ void StateMachineTransitionTo(StateMachine *machine, State *state)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Tried to set null State in StateMachine");
-        SDL_Quit();
+        return;
     }
 
     if (machine->CurrentState && machine->CurrentState->Exit)

@@ -4,9 +4,15 @@
 #include <stdarg.h>
 #include <string.h>
 
-UiLabel UiLabelInit(SDL_Renderer *renderer, const char *text, const Font *font,
-                    int fontsize, float x, float y, Origin origin,
-                    SDL_Color color)
+UiLabel UiLabelNew(SDL_Renderer *renderer, const char *text, const Font *font,
+                   int fontsize, Origin origin, SDL_Color color)
+{
+    return UiLabelNewAtXY(renderer, text, font, fontsize, 0, 0, origin, color);
+}
+
+UiLabel UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
+                       const Font *font, int fontsize, float x, float y,
+                       Origin origin, SDL_Color color)
 {
 
     SDL_RWops *fontMem = SDL_RWFromConstMem(font->Data, font->Len);
@@ -112,7 +118,6 @@ void UiLabelSetText(UiLabel *label, const char *format, ...)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Tried to set text on NULL Label");
-        SDL_Quit();
     }
 
     char buffer[512];

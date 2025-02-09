@@ -505,13 +505,13 @@ static void GameStateEnter(App *app)
     // setting up the blocks, UI, etc
 
     countdown.Label =
-        UiLabelInit(app->Renderer, "0", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
-                    WINDOW_HEIGHT / 2.0f, OriginCenter, PaletteForeground);
+        UiLabelNewAtXY(app->Renderer, "3", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
+                       WINDOW_HEIGHT / 2.0f, OriginCenter, PaletteForeground);
 
-    score.Label = UiLabelInit(app->Renderer, "3", &FontSquare, 32,
-                              WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
-                              WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
-                              OriginTopLeft, PaletteForeground);
+    score.Label = UiLabelNewAtXY(app->Renderer, "0", &FontSquare, 32,
+                                 WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
+                                 WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
+                                 OriginTopLeft, PaletteForeground);
 
     player.BoostCooldown = 0.0f;
     score.Score = 0;

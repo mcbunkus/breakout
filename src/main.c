@@ -112,20 +112,21 @@ int main(int argc, char *argv[])
     while (running)
     {
 
+        while (SDL_PollEvent(&ev) != 0)
+        {
+            switch (ev.type)
+            {
+            case SDL_QUIT:
+                running = false;
+                break;
+            }
+
+            StateMachineHandleEvents(app.StateMachine, &ev);
+        }
+
         uint32_t physicsTick = TickerTick(&PhysicsTicker);
         if (physicsTick)
         {
-            while (SDL_PollEvent(&ev) != 0)
-            {
-                switch (ev.type)
-                {
-                case SDL_QUIT:
-                    running = false;
-                    break;
-                }
-
-                StateMachineHandleEvents(app.StateMachine, &ev);
-            }
 
             input.KeyCodes = SDL_GetKeyboardState(NULL);
             StateMachineHandleInput(app.StateMachine, &input);
@@ -161,7 +162,10 @@ int main(int argc, char *argv[])
         }
     }
 
+    SDL_DestroyRenderer(app.Renderer);
     SDL_DestroyWindow(app.Window);
+
+    SDL_Quit();
 
     return 0;
 }

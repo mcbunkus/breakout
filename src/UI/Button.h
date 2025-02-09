@@ -24,8 +24,9 @@ typedef struct
     Rectangle Rectangle;
     UiButtonState States[UiButtonStatesLen];
     UiButtonStatesEnum CurrentState;
-    bool IsPressed;
     UiLabel Label;
+    bool IsPressed;
+    bool IsReleased;
 } UiButton;
 
 void UiButtonHandleEvents(UiButton *btn, SDL_Event *event);

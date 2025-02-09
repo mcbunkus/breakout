@@ -11,12 +11,13 @@ find_package(SDL2_ttf REQUIRED)
 
 add_executable(gamb 
   src/Fonts/Square.c
-  src/UI/Button.c
-  src/UI/Label.c
   src/Rectangle.c
+  src/State.c
   src/States/GameState.c 
   src/States/MenuState.c 
-  src/State.c
+  src/UI/Button.c
+  src/UI/Label.c
+  src/Util.c
   src/main.c 
 )
 
