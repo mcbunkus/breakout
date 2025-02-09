@@ -10,6 +10,7 @@
 
 #include "Fonts/Square.h"
 #include "UI/Label.h"
+#include "UI/UI.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -28,13 +29,13 @@
 typedef struct
 {
     float Time;
-    UiLabel Label;
+    UiLabel *Label;
 } Countdown;
 
 typedef struct
 {
     uint32_t Score;
-    UiLabel Label;
+    UiLabel *Label;
 } Score;
 
 typedef struct
@@ -80,6 +81,11 @@ typedef struct
     State State;
 } GameReloadState;
 
+typedef struct
+{
+
+} GameOver;
+
 //
 //
 //
@@ -99,18 +105,22 @@ static StateMachine *GameStateMachine = NULL;
 //
 
 static void CountdownStateUpdate(float delta);
-static void CountdownStateEnter();
+static void CountdownStateEnter(App *app);
 static void CountdownStateDraw(SDL_Renderer *renderer);
 
-static void PlayStateEnter();
-static void PlayStateEnter();
+static void PlayStateEnter(App *app);
+static void PlayStateEnter(App *app);
 static void PlayStateUpdate(float delta);
 static void PlayStateDraw(SDL_Renderer *renderer);
 static void PlayStateHandleInput(const Input *input);
 
-static void ReloadBlocksStateEnter();
+static void ReloadBlocksStateEnter(App *app);
 static void ReloadBlocksStateDraw(SDL_Renderer *renderer);
 static void ReloadBlocksStateUpdate(float delta);
+
+// static void GameOverStateEnter(App *app);
+// static void GameOverStateDraw(SDL_Renderer *renderer);
+// static void GameOverStateUpdate(float delta);
 
 //
 //
@@ -145,6 +155,12 @@ static State PlayState = {
     .HandleEvents = NULL,
 };
 
+// static State GameOverState = {
+//     .Enter = GameOverStateEnter,
+//     .Update = GameOverStateUpdate,
+//     .Draw = GameOverStateDraw,
+// };
+
 static GameReloadState ReloadState = {
 
     .BlockIndex = 0, // only needed in the reload state context
@@ -172,12 +188,12 @@ static Blocks blocks = {};
 
 static Score score = {
     .Score = 0,
-    .Label = {},
+    .Label = NULL,
 };
 
 static Countdown countdown = {
-    .Label = {},
     .Time = 3.0f,
+    .Label = NULL,
 
 };
 
@@ -237,7 +253,7 @@ static void PlayerReset()
 //
 //
 
-static void ReloadBlocksStateEnter() { ReloadState.BlockIndex = 0; }
+static void ReloadBlocksStateEnter(App *app) { ReloadState.BlockIndex = 0; }
 
 static void ReloadBlocksStateUpdate(float delta)
 {
@@ -272,7 +288,7 @@ static void ReloadBlocksStateDraw(SDL_Renderer *renderer)
     }
 
     RectangleDraw(&(backWall.Rect), renderer);
-    UiLabelDraw(&(score.Label));
+    WIDGET_DRAW(score.Label, renderer);
 }
 
 //
@@ -281,7 +297,7 @@ static void ReloadBlocksStateDraw(SDL_Renderer *renderer)
 //
 //
 
-static void CountdownStateEnter()
+static void CountdownStateEnter(App *_)
 {
     BallReset();
     PlayerReset();
@@ -296,7 +312,7 @@ static void CountdownStateUpdate(float delta)
         StateMachineTransitionTo(GameStateMachine, &PlayState);
     }
 
-    UiLabelSetText(&(countdown.Label), "%d", (int)(ceilf(countdown.Time)));
+    UiLabelSetText(countdown.Label, "%d", (int)(ceilf(countdown.Time)));
 }
 
 static void CountdownStateDraw(SDL_Renderer *renderer)
@@ -312,8 +328,9 @@ static void CountdownStateDraw(SDL_Renderer *renderer)
     }
 
     RectangleDraw(&(backWall.Rect), renderer);
-    UiLabelDrawToRenderer(&(countdown.Label), renderer);
-    UiLabelDrawToRenderer(&(score.Label), renderer);
+
+    WIDGET_DRAW(countdown.Label, renderer);
+    WIDGET_DRAW(score.Label, renderer);
 }
 
 //
@@ -324,7 +341,7 @@ static void CountdownStateDraw(SDL_Renderer *renderer)
 //
 //
 
-static void PlayStateEnter()
+static void PlayStateEnter(App *app)
 {
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Entered PlayState");
     ball.Direction = Vec2RandomUnit(-3 * M_PI / 4, -M_PI / 4);
@@ -410,7 +427,7 @@ static void PlayStateUpdate(float delta)
             ball.Direction.y < 0.0f)
         {
             score.Score += blocks.Points[i];
-            UiLabelSetText(&(score.Label), "%d", score.Score);
+            UiLabelSetText(score.Label, "%d", score.Score);
 
             blocks.Alive[i] = false;
 
@@ -455,8 +472,7 @@ static void PlayStateDraw(SDL_Renderer *renderer)
     }
 
     RectangleDraw(&(backWall.Rect), renderer);
-
-    UiLabelDraw(&(score.Label));
+    WIDGET_DRAW(score.Label, renderer);
 }
 
 static void PlayStateHandleInput(const Input *input)
@@ -599,8 +615,9 @@ static void GameStateHandleEvents(SDL_Event *ev)
 static void GameStateExit(App *app)
 {
     StateMachineStop(GameStateMachine);
-    UiLabelDestroy(&(countdown.Label));
-    UiLabelDestroy(&(score.Label));
+
+    WIDGET_DESTROY(countdown.Label);
+    WIDGET_DESTROY(score.Label);
 }
 
 State GameState = {.Enter = GameStateEnter,

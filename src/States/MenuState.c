@@ -18,23 +18,37 @@
 
 static App *app = NULL;
 
-static const UiButtonState DefaultButtonStates[UiButtonStatesLen] = {};
+static UiButtonState normal = {
+    .Color = PaletteLevel1,
+    .TextColor = PaletteBackground,
+};
 
-static UiLabel Title;
-static UiButton PlayButton;
-static UiButton QuitButton;
+static UiButtonState hover = {
+    .Color = PaletteLevel2,
+    .TextColor = PaletteBackground,
+};
+
+static UiButtonState pressed = {
+    .Color = PaletteLevel3,
+    .TextColor = PaletteBackground,
+};
+
+static UiLabel *Title;
+static UiButton *PlayButton;
+static UiButton *QuitButton;
 
 static void HandleEvents(SDL_Event *ev)
 {
-    UiButtonHandleEvents(&PlayButton, ev);
-    UiButtonHandleEvents(&QuitButton, ev);
 
-    if (PlayButton.IsReleased)
+    WIDGET_HANDLE_EVENT(PlayButton, ev);
+    WIDGET_HANDLE_EVENT(QuitButton, ev);
+
+    if (PlayButton->IsReleased)
     {
         StateMachineTransitionTo(app->StateMachine, &GameState);
     }
 
-    else if (QuitButton.IsReleased)
+    else if (QuitButton->IsReleased)
     {
         Exit();
     }
@@ -42,9 +56,17 @@ static void HandleEvents(SDL_Event *ev)
 
 static void Draw(SDL_Renderer *renderer)
 {
-    UiLabelDrawToRenderer(&Title, renderer);
-    UiButtonDraw(&PlayButton, renderer);
-    UiButtonDraw(&QuitButton, renderer);
+
+    WIDGET_DRAW(Title, renderer);
+    WIDGET_DRAW(PlayButton, renderer);
+    WIDGET_DRAW(QuitButton, renderer);
+}
+
+static void MenuStateExit(App *_app)
+{
+    WIDGET_DESTROY(Title);
+    WIDGET_DESTROY(PlayButton);
+    WIDGET_DESTROY(QuitButton);
 }
 
 static void Enter(App *_app)
@@ -58,47 +80,21 @@ static void Enter(App *_app)
                            WINDOW_WIDTH / 2.0, WINDOW_HEIGHT / 3.0,
                            OriginCenter, PaletteForeground);
 
-    PlayButton = (UiButton){
-        .IsPressed = false,
-        .CurrentState = UiButtonStatesNormal,
-        .Rectangle = {.Bounds = {.x = BUTTON_X,
-                                 .y = PLAY_BUTTON_Y,
-                                 .w = BUTTON_WIDTH,
-                                 .h = BUTTON_HEIGHT}},
-        .Label = UiLabelNew(app->Renderer, "Play", &FontSquare, 32,
-                            OriginCenter, PaletteBackground),
-        .States = {
-            [UiButtonStatesNormal] = {.Color = PaletteLevel1,
-                                      .TextColor = PaletteBackground},
-            [UiButtonStatesHovered] = {.Color = PaletteLevel2,
-                                       .TextColor = PaletteBackground},
-            [UiButtonStatesPressed] = {.Color = PaletteLevel3,
-                                       .TextColor = PaletteBackground},
+    UiLabel *playLabel = UiLabelNew(app->Renderer, "PLAY", &FontSquare, 32,
+                                    OriginCenter, PaletteBackground);
+    UiLabel *quitLabel = UiLabelNew(app->Renderer, "QUIT", &FontSquare, 32,
+                                    OriginCenter, PaletteBackground);
 
-        }};
+    PlayButton = UiButtonNew(playLabel, BUTTON_X, PLAY_BUTTON_Y, BUTTON_WIDTH,
+                             BUTTON_HEIGHT, normal, hover, pressed);
 
-    QuitButton = (UiButton){
-        .IsPressed = false,
-        .CurrentState = UiButtonStatesNormal,
-        .Rectangle = {.Bounds = {.x = BUTTON_X,
-                                 .y = QUIT_BUTTON_Y,
-                                 .w = BUTTON_WIDTH,
-                                 .h = BUTTON_HEIGHT}},
-        .Label = UiLabelNew(app->Renderer, "Quit", &FontSquare, 32,
-                            OriginCenter, PaletteBackground),
-        .States = {
-            [UiButtonStatesNormal] = {.Color = PaletteLevel1,
-                                      .TextColor = PaletteBackground},
-            [UiButtonStatesHovered] = {.Color = PaletteLevel2,
-                                       .TextColor = PaletteBackground},
-            [UiButtonStatesPressed] = {.Color = PaletteLevel3,
-                                       .TextColor = PaletteBackground},
-
-        }};
+    QuitButton = UiButtonNew(quitLabel, BUTTON_X, QUIT_BUTTON_Y, BUTTON_WIDTH,
+                             BUTTON_HEIGHT, normal, hover, pressed);
 }
 
 State MenuState = {
     .Enter = Enter,
+    .Exit = MenuStateExit,
     .HandleEvents = HandleEvents,
     .Draw = Draw,
 };

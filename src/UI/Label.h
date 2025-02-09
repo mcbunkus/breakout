@@ -3,13 +3,15 @@
 
 #include "Fonts/Font.h"
 #include "Origin.h"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "UI.h"
+
 typedef struct
 {
-    SDL_Color Color;
-    SDL_Rect Rect;
+    Widget base;
     SDL_Texture *Texture;
     TTF_Font *Font;
     SDL_Renderer *Renderer;
@@ -17,17 +19,13 @@ typedef struct
     char Text[64]; // TODO make this not suck
 } UiLabel;
 
-UiLabel UiLabelNew(SDL_Renderer *renderer, const char *text, const Font *font,
-                   int fontsize, Origin origin, SDL_Color color);
+UiLabel *UiLabelNew(SDL_Renderer *renderer, const char *text, const Font *font,
+                    int fontsize, Origin origin, SDL_Color color);
 
-UiLabel UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
-                       const Font *font, int fontsize, float x, float y,
-                       Origin origin, SDL_Color color);
-
-void UiLabelDraw(UiLabel *label);
-void UiLabelDrawToRenderer(UiLabel *label, SDL_Renderer *renderer);
+UiLabel *UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
+                        const Font *font, int fontsize, float x, float y,
+                        Origin origin, SDL_Color color);
 
 void UiLabelSetText(UiLabel *label, const char *format, ...);
-void UiLabelDestroy(UiLabel *label);
 
 #endif // !_GAMB_LABEL_H

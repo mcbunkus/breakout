@@ -2,7 +2,7 @@
 #define _GAMB_UI_BUTTON_H
 
 #include "Label.h"
-#include "Rectangle.h"
+// #include "Rectangle.h"
 #include <stdbool.h>
 
 typedef struct
@@ -21,15 +21,20 @@ typedef enum
 
 typedef struct
 {
-    Rectangle Rectangle;
+    Widget base;
+    // Rectangle Rectangle;
     UiButtonState States[UiButtonStatesLen];
     UiButtonStatesEnum CurrentState;
-    UiLabel Label;
+    UiLabel *Label;
     bool IsPressed;
     bool IsReleased;
 } UiButton;
 
-void UiButtonHandleEvents(UiButton *btn, SDL_Event *event);
-void UiButtonDraw(UiButton *btn, SDL_Renderer *renderer);
+UiButton *UiButtonNew(UiLabel *label, float x, float y, float w, float h,
+                      UiButtonState normal, UiButtonState hover,
+                      UiButtonState pressed);
+
+// void UiButtonHandleEvents(UiButton *btn, SDL_Event *event);
+// void UiButtonDraw(UiButton *btn, SDL_Renderer *renderer);
 
 #endif // !_GAMB_UI_BUTTON_H

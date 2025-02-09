@@ -4,16 +4,89 @@
 #include <stdarg.h>
 #include <string.h>
 
-UiLabel UiLabelNew(SDL_Renderer *renderer, const char *text, const Font *font,
-                   int fontsize, Origin origin, SDL_Color color)
+static void UiLabelDraw(Widget *self, SDL_Renderer *renderer)
+{
+    UiLabel *label = (UiLabel *)self;
+
+    SDL_FRect destRect = {.w = self->Width, .h = self->Height};
+    switch (label->Origin)
+    {
+    case OriginTopLeft:
+        destRect.x = self->X;
+        destRect.y = self->Y;
+        break;
+    case OriginTopCenter:
+        destRect.x = self->X - (self->Width / 2.0f);
+        destRect.y = self->Y;
+        break;
+    case OriginTopRight:
+        destRect.x = self->X - self->Width;
+        destRect.y = self->Y;
+        break;
+    case OriginCenterLeft:
+        destRect.x = self->X;
+        destRect.y = self->Y - (self->Height / 2.0f);
+        break;
+    case OriginCenter:
+        destRect.x = self->X - (self->Width / 2.0f);
+        destRect.y = self->Y - (self->Height / 2.0f);
+        break;
+    case OriginCenterRight:
+        destRect.x = self->X - self->Width;
+        destRect.y = self->Y - (self->Height / 2.0f);
+        break;
+    case OriginBottomLeft:
+        destRect.x = self->X;
+        destRect.y = self->Y - self->Height;
+        break;
+    case OriginBottomCenter:
+        destRect.x = self->X - (self->Width / 2.0f);
+        destRect.y = self->Y - self->Height;
+        break;
+    case OriginBottomRight:
+        destRect.x = self->X - self->Width;
+        destRect.y = self->Y - self->Height;
+        break;
+    }
+
+    SDL_SetRenderDrawColor(renderer, self->Color.r, self->Color.g,
+                           self->Color.b, self->Color.a);
+
+    SDL_RenderCopyF(renderer, label->Texture, NULL, &destRect);
+}
+
+static void UiLabelDestroy(Widget *self)
+{
+
+    UiLabel *label = (UiLabel *)self;
+
+    if (!label)
+    {
+        return;
+    }
+
+    if (label->Texture)
+    {
+        SDL_DestroyTexture(label->Texture);
+    }
+    if (label->Font)
+    {
+        TTF_CloseFont(label->Font);
+    }
+}
+
+UiLabel *UiLabelNew(SDL_Renderer *renderer, const char *text, const Font *font,
+                    int fontsize, Origin origin, SDL_Color color)
 {
     return UiLabelNewAtXY(renderer, text, font, fontsize, 0, 0, origin, color);
 }
 
-UiLabel UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
-                       const Font *font, int fontsize, float x, float y,
-                       Origin origin, SDL_Color color)
+UiLabel *UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
+                        const Font *font, int fontsize, float x, float y,
+                        Origin origin, SDL_Color color)
 {
+
+    UiLabel *label = malloc(sizeof(UiLabel));
 
     SDL_RWops *fontMem = SDL_RWFromConstMem(font->Data, font->Len);
 
@@ -21,7 +94,7 @@ UiLabel UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to read font data for Label: %s", SDL_GetError());
-        return (UiLabel){};
+        return NULL;
     }
 
     TTF_Font *loadedFont = TTF_OpenFontRW(fontMem, 1, fontsize);
@@ -30,86 +103,34 @@ UiLabel UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to load font for Label: %s", TTF_GetError());
-        return (UiLabel){};
+        return NULL;
     }
 
-    UiLabel label = {.Renderer = renderer,
-                     .Font = loadedFont,
-                     .Color = color,
-                     .Origin = origin};
-
-    SDL_Surface *surface =
-        TTF_RenderText_Blended(label.Font, text, label.Color);
+    SDL_Surface *surface = TTF_RenderText_Blended(loadedFont, text, color);
 
     if (!surface)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to get surface while creating label: %s",
                      TTF_GetError());
-        return (UiLabel){};
+        return NULL;
     }
 
-    label.Texture = SDL_CreateTextureFromSurface(renderer, surface);
-    label.Rect.w = surface->w;
-    label.Rect.h = surface->h;
-    label.Rect.x = x;
-    label.Rect.y = y;
+    label->base.Draw = UiLabelDraw;
+    label->base.Destroy = UiLabelDestroy;
+    label->base.Width = surface->w;
+    label->base.Height = surface->h;
+    label->base.Color = color;
+    label->base.X = x;
+    label->base.Y = y;
+
+    label->Renderer = renderer;
+    label->Font = loadedFont;
+    label->Origin = origin;
+    label->Texture = SDL_CreateTextureFromSurface(renderer, surface);
 
     SDL_FreeSurface(surface);
     return label;
-}
-
-void UiLabelDraw(UiLabel *label)
-{
-    UiLabelDrawToRenderer(label, label->Renderer);
-}
-
-void UiLabelDrawToRenderer(UiLabel *label, SDL_Renderer *renderer)
-{
-    SDL_FRect destRect = {.w = label->Rect.w, .h = label->Rect.h};
-    switch (label->Origin)
-    {
-    case OriginTopLeft:
-        destRect.x = label->Rect.x;
-        destRect.y = label->Rect.y;
-        break;
-    case OriginTopCenter:
-        destRect.x = label->Rect.x - (label->Rect.w / 2.0f);
-        destRect.y = label->Rect.y;
-        break;
-    case OriginTopRight:
-        destRect.x = label->Rect.x - label->Rect.w;
-        destRect.y = label->Rect.y;
-        break;
-    case OriginCenterLeft:
-        destRect.x = label->Rect.x;
-        destRect.y = label->Rect.y - (label->Rect.h / 2.0f);
-        break;
-    case OriginCenter:
-        destRect.x = label->Rect.x - (label->Rect.w / 2.0f);
-        destRect.y = label->Rect.y - (label->Rect.h / 2.0f);
-        break;
-    case OriginCenterRight:
-        destRect.x = label->Rect.x - label->Rect.w;
-        destRect.y = label->Rect.y - (label->Rect.h / 2.0f);
-        break;
-    case OriginBottomLeft:
-        destRect.x = label->Rect.x;
-        destRect.y = label->Rect.y - label->Rect.h;
-        break;
-    case OriginBottomCenter:
-        destRect.x = label->Rect.x - (label->Rect.w / 2.0f);
-        destRect.y = label->Rect.y - label->Rect.h;
-        break;
-    case OriginBottomRight:
-        destRect.x = label->Rect.x - label->Rect.w;
-        destRect.y = label->Rect.y - label->Rect.h;
-        break;
-    }
-    SDL_SetRenderDrawColor(renderer, label->Color.r, label->Color.g,
-                           label->Color.b, label->Color.a);
-
-    SDL_RenderCopyF(renderer, label->Texture, NULL, &destRect);
 }
 
 void UiLabelSetText(UiLabel *label, const char *format, ...)
@@ -132,7 +153,7 @@ void UiLabelSetText(UiLabel *label, const char *format, ...)
     }
 
     SDL_Surface *surface =
-        TTF_RenderText_Blended(label->Font, buffer, label->Color);
+        TTF_RenderText_Blended(label->Font, buffer, label->base.Color);
 
     if (!surface)
     {
@@ -158,20 +179,8 @@ void UiLabelSetText(UiLabel *label, const char *format, ...)
         return;
     }
 
-    label->Rect.w = surface->w;
-    label->Rect.h = surface->h;
+    label->base.Width = surface->w;
+    label->base.Height = surface->h;
 
     SDL_FreeSurface(surface);
-}
-
-void UiLabelDestroy(UiLabel *label)
-{
-    if (label->Texture)
-    {
-        SDL_DestroyTexture(label->Texture);
-    }
-    if (label->Font)
-    {
-        TTF_CloseFont(label->Font);
-    }
 }

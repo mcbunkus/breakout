@@ -1,10 +1,13 @@
 #include "Button.h"
 #include "Rectangle.h"
+#include "UI/Label.h"
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mouse.h>
 
-void UiButtonHandleEvents(UiButton *btn, SDL_Event *event)
+static void UiButtonHandleEvents(Widget *self, SDL_Event *event)
 {
+
+    UiButton *btn = (UiButton *)self;
 
     if (event->type != SDL_MOUSEMOTION && event->type != SDL_MOUSEBUTTONDOWN &&
         event->type != SDL_MOUSEBUTTONUP)
@@ -16,8 +19,11 @@ void UiButtonHandleEvents(UiButton *btn, SDL_Event *event)
     SDL_GetMouseState(&mouseX, &mouseY);
 
     Point mouse = {.x = mouseX, .y = mouseY};
+    Rectangle bounds = {
+        .Bounds = {
+            .x = self->X, .y = self->Y, .w = self->Width, .h = self->Height}};
 
-    if (RectangleContains(&(btn->Rectangle), mouse))
+    if (RectangleContains(&bounds, mouse))
     {
 
         switch (event->type)
@@ -45,66 +51,97 @@ void UiButtonHandleEvents(UiButton *btn, SDL_Event *event)
     }
 }
 
-void UiButtonDraw(UiButton *btn, SDL_Renderer *renderer)
+static void UiButtonDraw(Widget *self, SDL_Renderer *renderer)
 {
+
+    UiButton *btn = (UiButton *)self;
+
     // btn->Label.Rect.x = (int)btn->Rectangle.Bounds.x;
     // btn->Label.Rect.y = (int)btn->Rectangle.Bounds.y;
-    btn->Rectangle.Color = btn->States[btn->CurrentState].Color;
-    btn->Label.Color = btn->States[btn->CurrentState].TextColor;
+    self->Color = btn->States[btn->CurrentState].Color;
+    btn->Label->base.Color = btn->States[btn->CurrentState].TextColor;
 
-    switch (btn->Label.Origin)
+    switch (btn->Label->Origin)
     {
 
     case OriginTopLeft:
-        btn->Label.Rect.x = (int)btn->Rectangle.Bounds.x;
-        btn->Label.Rect.y = (int)btn->Rectangle.Bounds.y;
+        btn->Label->base.X = (int)self->X;
+        btn->Label->base.Y = (int)self->Y;
         break;
     case OriginTopCenter:
-        btn->Label.Rect.x =
-            (int)btn->Rectangle.Bounds.x + btn->Rectangle.Bounds.w / 2;
-        btn->Label.Rect.y = (int)btn->Rectangle.Bounds.y;
+        btn->Label->base.X = (int)self->X + self->Width / 2;
+        btn->Label->base.Y = (int)self->Y;
         break;
     case OriginTopRight:
-        btn->Label.Rect.x =
-            (int)btn->Rectangle.Bounds.x + btn->Rectangle.Bounds.w;
-        btn->Label.Rect.y = (int)btn->Rectangle.Bounds.y;
+        btn->Label->base.X = (int)self->X + self->Width;
+        btn->Label->base.Y = (int)self->Y;
         break;
     case OriginCenterLeft:
-        btn->Label.Rect.x = (int)btn->Rectangle.Bounds.x;
-        btn->Label.Rect.y =
-            (int)btn->Rectangle.Bounds.y + btn->Rectangle.Bounds.h / 2;
+        btn->Label->base.X = (int)self->X;
+        btn->Label->base.Y = (int)self->Y + self->Height / 2;
         break;
     case OriginCenter:
-        btn->Label.Rect.x =
-            (int)btn->Rectangle.Bounds.x + btn->Rectangle.Bounds.w / 2;
-        btn->Label.Rect.y =
-            (int)btn->Rectangle.Bounds.y + btn->Rectangle.Bounds.h / 2;
+        btn->Label->base.X = (int)self->X + self->Width / 2;
+        btn->Label->base.Y = (int)self->Y + self->Height / 2;
         break;
     case OriginCenterRight:
-        btn->Label.Rect.x =
-            (int)btn->Rectangle.Bounds.x + btn->Rectangle.Bounds.w;
-        btn->Label.Rect.y =
-            (int)btn->Rectangle.Bounds.y + btn->Rectangle.Bounds.h / 2;
+        btn->Label->base.X = (int)self->X + self->Width;
+        btn->Label->base.Y = (int)self->Y + self->Height / 2;
         break;
     case OriginBottomLeft:
-        btn->Label.Rect.x = (int)btn->Rectangle.Bounds.x;
-        btn->Label.Rect.y =
-            (int)btn->Rectangle.Bounds.y + btn->Rectangle.Bounds.h;
+        btn->Label->base.X = (int)self->X;
+        btn->Label->base.Y = (int)self->Y + self->Height;
         break;
     case OriginBottomCenter:
-        btn->Label.Rect.x =
-            (int)btn->Rectangle.Bounds.x + btn->Rectangle.Bounds.w / 2;
-        btn->Label.Rect.y =
-            (int)btn->Rectangle.Bounds.y + btn->Rectangle.Bounds.h;
+        btn->Label->base.X = (int)self->X + self->Width / 2;
+        btn->Label->base.Y = (int)self->Y + self->Height;
         break;
     case OriginBottomRight:
-        btn->Label.Rect.x =
-            (int)btn->Rectangle.Bounds.x + btn->Rectangle.Bounds.w;
-        btn->Label.Rect.y =
-            (int)btn->Rectangle.Bounds.y + btn->Rectangle.Bounds.h;
+        btn->Label->base.X = (int)self->X + self->Width;
+        btn->Label->base.Y = (int)self->Y + self->Height;
         break;
     }
 
-    RectangleDraw(&(btn->Rectangle), renderer);
-    UiLabelDrawToRenderer(&(btn->Label), renderer);
+    Rectangle background = {
+        .Bounds = {.x = self->X,
+                   .y = self->Y,
+                   .w = self->Width,
+                   .h = self->Height},
+        .Color = self->Color,
+    };
+
+    RectangleDraw(&background, renderer);
+    WIDGET_DRAW(btn->Label, renderer);
+    // UiLabelDrawToRenderer(&(btn->Label), renderer);
+}
+
+void UiButtonDestroy(Widget *self)
+{
+    UiButton *btn = (UiButton *)self;
+    WIDGET_DESTROY(btn->Label);
+}
+
+UiButton *UiButtonNew(UiLabel *label, float x, float y, float w, float h,
+                      UiButtonState normal, UiButtonState hover,
+                      UiButtonState pressed)
+{
+    UiButton *button = malloc(sizeof(UiButton));
+
+    button->Label = label;
+    button->States[UiButtonStatesNormal] = normal;
+    button->States[UiButtonStatesHovered] = hover;
+    button->States[UiButtonStatesPressed] = pressed;
+
+    button->base.X = x;
+    button->base.Y = y;
+    button->base.Width = w;
+    button->base.Height = h;
+    button->base.Color = normal.Color;
+    button->CurrentState = UiButtonStatesNormal;
+
+    button->base.Draw = UiButtonDraw;
+    button->base.HandleEvent = UiButtonHandleEvents;
+    button->base.Destroy = UiButtonDestroy;
+
+    return button;
 }
