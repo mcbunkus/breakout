@@ -12,17 +12,15 @@
 #include "Input.h"
 #include "Palette.h"
 
+#include "State.h"
+
 #include "States/GameState.h"
-#include "States/State.h"
+#include "States/MenuState.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
 #define FPS(amount) ((1000) / (amount))
-
-static SDL_Window *window = NULL;
-static SDL_Renderer *renderer = NULL;
-static StateMachine *gameMachine;
 
 typedef struct
 {
@@ -54,7 +52,10 @@ int32_t TickerTimeLeft(Ticker *ticker)
 
 int main(int argc, char *argv[])
 {
+
     srand(time(NULL));
+
+    App app = {.Window = NULL, .Renderer = NULL, .StateMachine = NULL};
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0)
     {
@@ -62,21 +63,21 @@ int main(int argc, char *argv[])
         SDL_Quit();
     }
 
-    window = SDL_CreateWindow("gamb", SDL_WINDOWPOS_UNDEFINED,
-                              SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH,
-                              WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+    app.Window = SDL_CreateWindow("gamb", SDL_WINDOWPOS_UNDEFINED,
+                                  SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH,
+                                  WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 
-    if (!window)
+    if (!app.Window)
     {
         fprintf(stderr, "SDL_CreateWindow: %s\n", SDL_GetError());
         SDL_Quit();
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer)
+    app.Renderer = SDL_CreateRenderer(app.Window, -1, SDL_RENDERER_ACCELERATED);
+    if (!app.Renderer)
     {
         fprintf(stderr, "Renderer could not be created: %s\n", SDL_GetError());
-        SDL_DestroyWindow(window);
+        SDL_DestroyWindow(app.Window);
         SDL_Quit();
     }
 
@@ -87,11 +88,9 @@ int main(int argc, char *argv[])
         SDL_Quit();
     }
 
-    State GameState = GameStateInit(renderer);
-
     // actual game stuff happens within the context of gameMachine, and nested
     // state machines
-    gameMachine = StateMachineCreate(&GameState);
+    app.StateMachine = StateMachineCreate(&app, &GameState);
 
     SDL_Event ev;
     Input input;
@@ -110,7 +109,7 @@ int main(int argc, char *argv[])
     };
 
     bool running = true;
-    StateMachineStart(gameMachine);
+    StateMachineStart(app.StateMachine);
 
     while (running)
     {
@@ -127,30 +126,32 @@ int main(int argc, char *argv[])
                     break;
                 }
 
-                StateMachineHandleEvents(gameMachine, &ev);
+                StateMachineHandleEvents(app.StateMachine, &ev);
             }
 
             input.KeyCodes = SDL_GetKeyboardState(NULL);
-            StateMachineHandleInput(gameMachine, &input);
+            StateMachineHandleInput(app.StateMachine, &input);
 
             float deltaTime = physicsTick / 1000.0f;
 
-            StateMachineUpdate(gameMachine, deltaTime);
+            StateMachineUpdate(app.StateMachine, deltaTime);
         }
 
         if (TickerTick(&RenderTicker))
         {
-            SDL_SetRenderDrawColor(renderer, PaletteBackground.r,
+            SDL_SetRenderDrawColor(app.Renderer, PaletteBackground.r,
                                    PaletteBackground.g, PaletteBackground.b,
                                    PaletteBackground.a);
 
-            SDL_RenderClear(renderer);
+            SDL_RenderClear(app.Renderer);
 
-            StateMachineDraw(gameMachine, renderer);
+            StateMachineDraw(app.StateMachine, app.Renderer);
 
-            SDL_RenderPresent(renderer);
+            SDL_RenderPresent(app.Renderer);
         }
 
+        // I'm sure there's a much better way of doing this, that's making
+        // whoever read this later cry
         int32_t physicsTimeLeft = TickerTimeLeft(&PhysicsTicker);
         int32_t renderTimeLeft = TickerTimeLeft(&RenderTicker);
         int32_t timeLeft =
@@ -162,7 +163,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(app.Window);
 
     return 0;
 }

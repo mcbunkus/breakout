@@ -1,3 +1,4 @@
+
 #include "State.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_log.h>
@@ -5,16 +6,24 @@
 
 struct StateMachine
 {
+    App *App;
     State *CurrentState;
 };
 
-StateMachine *StateMachineCreate(State *initialState)
+StateMachine *StateMachineCreate(App *app, State *initialState)
 {
     StateMachine *machine = malloc(sizeof(StateMachine));
     if (!machine)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "Failed to allocate StateMachine");
+        return NULL;
+    }
+
+    if (!app)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
+                     "App passed to StateMachineCreate was NULL!");
         return NULL;
     }
 
@@ -25,6 +34,7 @@ StateMachine *StateMachineCreate(State *initialState)
         return NULL;
     }
 
+    machine->App = app;
     machine->CurrentState = initialState;
     return machine;
 }
@@ -33,7 +43,7 @@ void StateMachineStart(StateMachine *machine)
 {
     if (machine->CurrentState && machine->CurrentState->Enter)
     {
-        machine->CurrentState->Enter();
+        machine->CurrentState->Enter(machine->App);
     }
 }
 
@@ -41,7 +51,7 @@ void StateMachineStop(StateMachine *machine)
 {
     if (machine->CurrentState && machine->CurrentState->Exit)
     {
-        machine->CurrentState->Exit();
+        machine->CurrentState->Exit(machine->App);
     }
 }
 
@@ -56,14 +66,14 @@ void StateMachineTransitionTo(StateMachine *machine, State *state)
 
     if (machine->CurrentState && machine->CurrentState->Exit)
     {
-        machine->CurrentState->Exit();
+        machine->CurrentState->Exit(machine->App);
     }
 
     machine->CurrentState = state;
 
     if (machine->CurrentState->Enter)
     {
-        machine->CurrentState->Enter();
+        machine->CurrentState->Enter(machine->App);
     }
 }
 

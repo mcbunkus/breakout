@@ -3,6 +3,6 @@
 
 #include "State.h"
 
-State GameStateInit(SDL_Renderer *renderer);
+extern State GameState;
 
 #endif // !_GAMB_GAME_STATE_H

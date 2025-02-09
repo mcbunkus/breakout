@@ -92,7 +92,6 @@ typedef struct
 //
 
 static StateMachine *GameStateMachine = NULL;
-static SDL_Renderer *MainRenderer = NULL;
 
 //
 //
@@ -503,16 +502,16 @@ static void PlayStateHandleInput(const Input *input)
 //
 //
 
-static void GameStateEnter()
+static void GameStateEnter(App *app)
 {
 
     // setting up the blocks, UI, etc
 
     countdown.Label =
-        LabelInit(MainRenderer, "3", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
+        LabelInit(app->Renderer, "3", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
                   WINDOW_HEIGHT / 2.0f, LabelCenter, PaletteForeground);
 
-    score.Label = LabelInit(MainRenderer, "3", &FontSquare, 32,
+    score.Label = LabelInit(app->Renderer, "3", &FontSquare, 32,
                             WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
                             WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
                             LabelTopLeft, PaletteForeground);
@@ -565,7 +564,7 @@ static void GameStateEnter()
         }
     }
 
-    GameStateMachine = StateMachineCreate(&CountdownState);
+    GameStateMachine = StateMachineCreate(app, &CountdownState);
     StateMachineStart(GameStateMachine);
 }
 
@@ -588,20 +587,16 @@ static void GameStateHandleEvents(SDL_Event *ev)
     StateMachineHandleEvents(GameStateMachine, ev);
 }
 
-static void GameStateExit()
+static void GameStateExit(App *app)
 {
     StateMachineStop(GameStateMachine);
     LabelDestroy(&(countdown.Label));
     LabelDestroy(&(score.Label));
 }
 
-State GameStateInit(SDL_Renderer *_renderer)
-{
-    MainRenderer = _renderer;
-    return (State){.Enter = GameStateEnter,
+State GameState = {.Enter = GameStateEnter,
                    .Exit = GameStateExit,
                    .Update = GameStateUpdate,
                    .Draw = GameStateDraw,
                    .HandleInput = GameStateHandleInput,
                    .HandleEvents = GameStateHandleEvents};
-}

@@ -6,19 +6,27 @@
 #include <SDL2/SDL_render.h>
 #include <stdbool.h>
 
+typedef struct StateMachine StateMachine;
+typedef struct App App;
+
+struct App
+{
+    SDL_Window *Window;
+    SDL_Renderer *Renderer;
+    StateMachine *StateMachine;
+};
+
 typedef struct
 {
-    void (*Enter)(void);
-    void (*Exit)(void);
+    void (*Enter)(App *app);
+    void (*Exit)(App *app);
     void (*Update)(float delta);
     void (*Draw)(SDL_Renderer *renderer);
     void (*HandleInput)(const Input *renderer);
     void (*HandleEvents)(SDL_Event *ev);
 } State;
 
-typedef struct StateMachine StateMachine;
-
-StateMachine *StateMachineCreate(State *initialState);
+StateMachine *StateMachineCreate(App *app, State *initialState);
 void StateMachineStart(StateMachine *machine);
 void StateMachineStop(StateMachine *machine);
 
