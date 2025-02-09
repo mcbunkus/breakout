@@ -1,21 +1,18 @@
-#include "GameState.h"
+#include <SDL2/SDL.h>
+
+#include "State.h"
+#include "States.h"
+
 #include "Consts.h"
-#include "Fonts/Square.h"
-#include "Label.h"
 #include "Math.h"
 #include "Palette.h"
 #include "Rectangle.h"
-#include "State.h"
 
-#include <SDL2/SDL_rect.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_scancode.h>
-#include <SDL2/SDL_surface.h>
-#include <SDL2/SDL_ttf.h>
+#include "Fonts/Square.h"
+#include "UI/Label.h"
+
 #include <stdint.h>
 #include <stdio.h>
-
-#include <SDL2/SDL.h>
 #include <string.h>
 
 #define INDEX(i, j) (((i) * (NCOLS)) + (j))
@@ -275,7 +272,7 @@ static void ReloadBlocksStateDraw(SDL_Renderer *renderer)
     }
 
     RectangleDraw(&(backWall.Rect), renderer);
-    LabelDraw(&(score.Label));
+    UiLabelDraw(&(score.Label));
 }
 
 //
@@ -299,7 +296,7 @@ static void CountdownStateUpdate(float delta)
         StateMachineTransitionTo(GameStateMachine, &PlayState);
     }
 
-    LabelSetText(&(countdown.Label), "%d", (int)(ceilf(countdown.Time)));
+    UiLabelSetText(&(countdown.Label), "%d", (int)(ceilf(countdown.Time)));
 }
 
 static void CountdownStateDraw(SDL_Renderer *renderer)
@@ -316,7 +313,7 @@ static void CountdownStateDraw(SDL_Renderer *renderer)
 
     RectangleDraw(&(backWall.Rect), renderer);
 
-    LabelDraw(&(countdown.Label));
+    UiLabelDraw(&(countdown.Label));
 }
 
 //
@@ -410,7 +407,7 @@ static void PlayStateUpdate(float delta)
             ball.Direction.y < 0.0f)
         {
             score.Score += blocks.Points[i];
-            LabelSetText(&(score.Label), "%d", score.Score);
+            UiLabelSetText(&(score.Label), "%d", score.Score);
 
             blocks.Alive[i] = false;
 
@@ -456,7 +453,7 @@ static void PlayStateDraw(SDL_Renderer *renderer)
 
     RectangleDraw(&(backWall.Rect), renderer);
 
-    LabelDraw(&(score.Label));
+    UiLabelDraw(&(score.Label));
 }
 
 static void PlayStateHandleInput(const Input *input)
@@ -508,13 +505,13 @@ static void GameStateEnter(App *app)
     // setting up the blocks, UI, etc
 
     countdown.Label =
-        LabelInit(app->Renderer, "3", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
-                  WINDOW_HEIGHT / 2.0f, LabelCenter, PaletteForeground);
+        UiLabelInit(app->Renderer, "0", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
+                    WINDOW_HEIGHT / 2.0f, OriginCenter, PaletteForeground);
 
-    score.Label = LabelInit(app->Renderer, "3", &FontSquare, 32,
-                            WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
-                            WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
-                            LabelTopLeft, PaletteForeground);
+    score.Label = UiLabelInit(app->Renderer, "3", &FontSquare, 32,
+                              WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
+                              WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
+                              OriginTopLeft, PaletteForeground);
 
     player.BoostCooldown = 0.0f;
     score.Score = 0;
@@ -590,8 +587,8 @@ static void GameStateHandleEvents(SDL_Event *ev)
 static void GameStateExit(App *app)
 {
     StateMachineStop(GameStateMachine);
-    LabelDestroy(&(countdown.Label));
-    LabelDestroy(&(score.Label));
+    UiLabelDestroy(&(countdown.Label));
+    UiLabelDestroy(&(score.Label));
 }
 
 State GameState = {.Enter = GameStateEnter,

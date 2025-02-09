@@ -13,9 +13,7 @@
 #include "Palette.h"
 
 #include "State.h"
-
-#include "States/GameState.h"
-#include "States/MenuState.h"
+#include "States/States.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -90,7 +88,7 @@ int main(int argc, char *argv[])
 
     // actual game stuff happens within the context of gameMachine, and nested
     // state machines
-    app.StateMachine = StateMachineCreate(&app, &GameState);
+    app.StateMachine = StateMachineCreate(&app, &MenuState);
 
     SDL_Event ev;
     Input input;

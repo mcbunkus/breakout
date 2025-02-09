@@ -47,5 +47,5 @@ void UiButtonDraw(UiButton *btn, SDL_Renderer *renderer)
     btn->Label.Color = btn->States[btn->CurrentState].TextColor;
 
     RectangleDraw(&(btn->Rectangle), renderer);
-    LabelDrawToRenderer(&(btn->Label), renderer);
+    UiLabelDrawToRenderer(&(btn->Label), renderer);
 }

@@ -4,9 +4,9 @@
 #include <stdarg.h>
 #include <string.h>
 
-UiLabel LabelInit(SDL_Renderer *renderer, const char *text, const Font *font,
-                  int fontsize, float x, float y, LabelOrigin origin,
-                  SDL_Color color)
+UiLabel UiLabelInit(SDL_Renderer *renderer, const char *text, const Font *font,
+                    int fontsize, float x, float y, Origin origin,
+                    SDL_Color color)
 {
 
     SDL_RWops *fontMem = SDL_RWFromConstMem(font->Data, font->Len);
@@ -53,46 +53,49 @@ UiLabel LabelInit(SDL_Renderer *renderer, const char *text, const Font *font,
     return label;
 }
 
-void LabelDraw(UiLabel *label) { LabelDrawToRenderer(label, label->Renderer); }
+void UiLabelDraw(UiLabel *label)
+{
+    UiLabelDrawToRenderer(label, label->Renderer);
+}
 
-void LabelDrawToRenderer(UiLabel *label, SDL_Renderer *renderer)
+void UiLabelDrawToRenderer(UiLabel *label, SDL_Renderer *renderer)
 {
     SDL_FRect destRect = {.w = label->Rect.w, .h = label->Rect.h};
     switch (label->Origin)
     {
-    case LabelTopLeft:
+    case OriginTopLeft:
         destRect.x = label->Rect.x;
         destRect.y = label->Rect.y;
         break;
-    case LabelTopCenter:
+    case OriginTopCenter:
         destRect.x = label->Rect.x - (label->Rect.w / 2.0f);
         destRect.y = label->Rect.y;
         break;
-    case LabelTopRight:
+    case OriginTopRight:
         destRect.x = label->Rect.x - label->Rect.w;
         destRect.y = label->Rect.y;
         break;
-    case LabelCenterLeft:
+    case OriginCenterLeft:
         destRect.x = label->Rect.x;
         destRect.y = label->Rect.y - (label->Rect.h / 2.0f);
         break;
-    case LabelCenter:
+    case OriginCenter:
         destRect.x = label->Rect.x - (label->Rect.w / 2.0f);
         destRect.y = label->Rect.y - (label->Rect.h / 2.0f);
         break;
-    case LabelCenterRight:
+    case OriginCenterRight:
         destRect.x = label->Rect.x - label->Rect.w;
         destRect.y = label->Rect.y - (label->Rect.h / 2.0f);
         break;
-    case LabelBottomLeft:
+    case OriginBottomLeft:
         destRect.x = label->Rect.x;
         destRect.y = label->Rect.y - label->Rect.h;
         break;
-    case LabelBottomCenter:
+    case OriginBottomCenter:
         destRect.x = label->Rect.x - (label->Rect.w / 2.0f);
         destRect.y = label->Rect.y - label->Rect.h;
         break;
-    case LabelBottomRight:
+    case OriginBottomRight:
         destRect.x = label->Rect.x - label->Rect.w;
         destRect.y = label->Rect.y - label->Rect.h;
         break;
@@ -103,7 +106,7 @@ void LabelDrawToRenderer(UiLabel *label, SDL_Renderer *renderer)
     SDL_RenderCopyF(renderer, label->Texture, NULL, &destRect);
 }
 
-void LabelSetText(UiLabel *label, const char *format, ...)
+void UiLabelSetText(UiLabel *label, const char *format, ...)
 {
     if (!label)
     {
@@ -156,7 +159,7 @@ void LabelSetText(UiLabel *label, const char *format, ...)
     SDL_FreeSurface(surface);
 }
 
-void LabelDestroy(UiLabel *label)
+void UiLabelDestroy(UiLabel *label)
 {
     if (label->Texture)
     {
