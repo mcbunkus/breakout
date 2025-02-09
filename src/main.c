@@ -1,3 +1,4 @@
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_log.h>
 #include <SDL2/SDL_render.h>
@@ -25,6 +26,23 @@ typedef struct
     int32_t Time;
     int32_t Delta;
 } Ticker;
+
+// don't care about these app events
+int HandleAppEvents(void *_, SDL_Event *ev)
+{
+    switch (ev->type)
+    {
+    case SDL_APP_TERMINATING:
+    case SDL_APP_LOWMEMORY:
+    case SDL_APP_WILLENTERBACKGROUND:
+    case SDL_APP_DIDENTERBACKGROUND:
+    case SDL_APP_WILLENTERFOREGROUND:
+    case SDL_APP_DIDENTERFOREGROUND:
+        return 0;
+    default:
+        return 1;
+    }
+}
 
 /**
  * Returns milliseconds since last tick, representing true, else 0 if the ticker
@@ -86,6 +104,8 @@ int main(int argc, char *argv[])
         SDL_Quit();
     }
 
+    SDL_SetEventFilter(HandleAppEvents, NULL);
+
     // actual game stuff happens within the context of gameMachine, and nested
     // state machines
     app.StateMachine = StateMachineCreate(&app, &MenuState);
@@ -124,10 +144,11 @@ int main(int argc, char *argv[])
             StateMachineHandleEvents(app.StateMachine, &ev);
         }
 
+        // physicsTick is 0 if the ticker hasn't "ticked", or if it has, then
+        // it's the amount of time since the last tick in milliseconds
         uint32_t physicsTick = TickerTick(&PhysicsTicker);
         if (physicsTick)
         {
-
             input.KeyCodes = SDL_GetKeyboardState(NULL);
             StateMachineHandleInput(app.StateMachine, &input);
 

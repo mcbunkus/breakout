@@ -40,7 +40,7 @@ typedef struct
 typedef struct
 {
     uint8_t LivesLeft;
-
+    Rectangle Indicators[];
 } Lives;
 
 typedef struct
@@ -312,8 +312,8 @@ static void CountdownStateDraw(SDL_Renderer *renderer)
     }
 
     RectangleDraw(&(backWall.Rect), renderer);
-
-    UiLabelDraw(&(countdown.Label));
+    UiLabelDrawToRenderer(&(countdown.Label), renderer);
+    UiLabelDrawToRenderer(&(score.Label), renderer);
 }
 
 //
@@ -351,10 +351,6 @@ static void PlayStateUpdate(float delta)
     {
         player.Rect.Color = PaletteLevel1; // skip the blue and just go to green
     }
-    else
-    {
-        player.Rect.Color = PaletteForeground;
-    }
 
     if (player.Rect.Bounds.x < 0)
     {
@@ -368,12 +364,19 @@ static void PlayStateUpdate(float delta)
 
     player.Rect.Bounds.x += player.Speed * delta;
 
-    if (ball.Rect.Bounds.x < 0 ||
-        (ball.Rect.Bounds.w + ball.Rect.Bounds.x) > WINDOW_WIDTH)
+    // Sometimes the ball gets kinda stuck in the wall if it hits it hard
+    // enough, velocity checks are for making sure it reflects when it hits the
+    // side of the window going in
+
+    if ((ball.Rect.Bounds.x < 0 && ball.Direction.x < 0) ||
+        ((ball.Rect.Bounds.w + ball.Rect.Bounds.x) > WINDOW_WIDTH) &&
+            ball.Direction.x > 0)
     {
         ball.Direction.x = -ball.Direction.x;
     }
 
+    // probably won't happen, but good if the ball glitches through the backwall
+    // somehow
     if (ball.Rect.Bounds.y < 0 ||
         (ball.Rect.Bounds.h + ball.Rect.Bounds.y) > WINDOW_HEIGHT)
     {
@@ -477,9 +480,17 @@ static void PlayStateHandleInput(const Input *input)
     }
     else
     {
-        float targetSpeed = input->KeyCodes[SDL_SCANCODE_LSHIFT]
-                                ? player.FineTuneSpeed
-                                : player.NormalSpeed;
+        float targetSpeed = 0.0f;
+        if (input->KeyCodes[SDL_SCANCODE_LSHIFT])
+        {
+            targetSpeed = player.FineTuneSpeed;
+            player.Rect.Color = PaletteLevel2;
+        }
+        else
+        {
+            targetSpeed = player.NormalSpeed;
+            player.Rect.Color = PaletteForeground;
+        }
         player.Speed = Flerp(player.Speed, targetSpeed * player.MoveDirection,
                              player.SpeedLerp);
     }
@@ -536,7 +547,8 @@ static void GameStateEnter(App *app)
                 .Bounds = {
                     .x = xpos, .y = ypos, .w = blockWidth, .h = blockHeight}};
 
-            blocks.Alive[i] = true;
+            // we start with the reload animation, all of these should be "dead"
+            blocks.Alive[i] = false;
 
             if (row < NROWS / 4)
             {
@@ -561,7 +573,7 @@ static void GameStateEnter(App *app)
         }
     }
 
-    GameStateMachine = StateMachineCreate(app, &CountdownState);
+    GameStateMachine = StateMachineCreate(app, &(ReloadState.State));
     StateMachineStart(GameStateMachine);
 }
 

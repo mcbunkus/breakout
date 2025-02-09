@@ -21,7 +21,7 @@
 #define NBLOCKS 96
 
 #define BLOCKS_TOP_PADDING 56
-#define BACKWALL_THICKNESS 8
+#define BACKWALL_THICKNESS 6
 
 #define GAME_FONT "assets/AldotheApache.ttf"
 

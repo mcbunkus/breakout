@@ -4,6 +4,8 @@
 #include "State.h"
 #include "States.h"
 #include "UI/Button.h"
+#include "UI/Label.h"
+#include "UI/UI.h"
 #include "Util.h"
 
 #define BUTTON_WIDTH 128
@@ -18,6 +20,7 @@ static App *app = NULL;
 
 static const UiButtonState DefaultButtonStates[UiButtonStatesLen] = {};
 
+static UiLabel Title;
 static UiButton PlayButton;
 static UiButton QuitButton;
 
@@ -39,17 +42,21 @@ static void HandleEvents(SDL_Event *ev)
 
 static void Draw(SDL_Renderer *renderer)
 {
+    UiLabelDrawToRenderer(&Title, renderer);
     UiButtonDraw(&PlayButton, renderer);
     UiButtonDraw(&QuitButton, renderer);
 }
 
 static void Enter(App *_app)
 {
-
     if (app == NULL)
     {
         app = _app;
     }
+
+    Title = UiLabelNewAtXY(app->Renderer, "BREAKOUT", &FontSquare, 96,
+                           WINDOW_WIDTH / 2.0, WINDOW_HEIGHT / 3.0,
+                           OriginCenter, PaletteForeground);
 
     PlayButton = (UiButton){
         .IsPressed = false,
