@@ -90,6 +90,8 @@ typedef struct
     UiButton *BackToMenuButton;
     float BlockDelayTimer;
     float BlockDelayTime;
+    bool AllBlocksDead;
+    int BlockCounter;
 } GameOverState;
 
 //
@@ -615,6 +617,10 @@ static void PlayStateHandleInput(const Input *input)
 static void GameOverStateEnter(App *app)
 {
     GameOver.App = app;
+    GameOver.BlockDelayTime = 0.01f;
+    GameOver.BlockDelayTimer = GameOver.BlockDelayTime;
+    GameOver.AllBlocksDead = false;
+    GameOver.BlockCounter = 0;
 
     // reuse the countdown label for the score, since it's already there doing
     // nothing
@@ -623,7 +629,30 @@ static void GameOverStateEnter(App *app)
     SDL_Log("Entered Game Over State");
 }
 
-static void GameOverStateUpdate(float delta) {}
+static void GameOverStateUpdate(float delta)
+{
+    GameOver.BlockDelayTimer -= delta;
+
+    if (GameOver.BlockDelayTimer <= 0.0f)
+    {
+        while (!blocks.Alive[GameOver.BlockCounter] &&
+               (GameOver.BlockCounter < NBLOCKS))
+        {
+            GameOver.BlockCounter += 1;
+        }
+
+        if (GameOver.BlockCounter == NBLOCKS)
+        {
+            GameOver.AllBlocksDead = true;
+        }
+        else if (GameOver.BlockCounter < NBLOCKS &&
+                 blocks.Alive[GameOver.BlockCounter])
+        {
+            blocks.Alive[GameOver.BlockCounter] = false;
+            GameOver.BlockDelayTimer = GameOver.BlockDelayTime;
+        }
+    }
+}
 
 static void GameOverStateHandleEvents(SDL_Event *ev)
 {
@@ -644,14 +673,16 @@ static void GameOverStateHandleEvents(SDL_Event *ev)
 
 static void GameOverStateDraw(SDL_Renderer *renderer)
 {
-    RectangleDraw(&(player.Rect), renderer);
-    RectangleDraw(&(backWall.Rect), renderer);
 
     WIDGET_DRAW(countdown.Label, renderer);
     WIDGET_DRAW(GameOver.PlayAgainButton, renderer);
     WIDGET_DRAW(GameOver.BackToMenuButton, renderer);
 
-    DrawBlocks(renderer);
+    if (!GameOver.AllBlocksDead)
+    {
+        RectangleDraw(&(player.Rect), renderer);
+        DrawBlocks(renderer);
+    }
 }
 
 static void GameOverStateExit(App *app)
@@ -672,7 +703,7 @@ static void GameStateEnter(App *app)
 
     // setting up the blocks, UI, etc
 
-    const float buttonY = 2.0f * WINDOW_HEIGHT / 3.0f;
+    const float buttonY = 1.75f * WINDOW_HEIGHT / 3.0f;
     const float buttonWidth = 256.0f;
 
     countdown.Label =

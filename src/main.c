@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
             switch (ev.type)
             {
             case SDL_QUIT:
+                SDL_Log("Exiting...");
                 running = false;
                 break;
             }
