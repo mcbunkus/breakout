@@ -1,5 +1,4 @@
-#ifndef _GAMB_LABEL_H
-#define _GAMB_LABEL_H
+#pragma once
 
 #include "Fonts/Font.h"
 #include "Origin.h"
@@ -27,5 +26,3 @@ UiLabel *UiLabelNewAtXY(SDL_Renderer *renderer, const char *text,
                         Origin origin, SDL_Color color);
 
 void UiLabelSetText(UiLabel *label, const char *format, ...);
-
-#endif // !_GAMB_LABEL_H

@@ -1,5 +1,4 @@
-#ifndef _GAMB_PLAYER_H
-#define _GAMB_PLAYER_H
+#pragma once
 
 #include <SDL2/SDL.h>
 
@@ -16,5 +15,3 @@ typedef struct
     float SpeedLerp;
     int MoveDirection;
 } Player;
-
-#endif // !_GAMB_PLAYER_H

@@ -1,5 +1,4 @@
-#ifndef _GAMB_STATE_H
-#define _GAMB_STATE_H
+#pragma once
 
 #include "Input.h"
 #include <SDL2/SDL_events.h>
@@ -37,5 +36,3 @@ void StateMachineHandleEvents(StateMachine *machine, SDL_Event *ev);
 void StateMachineHandleInput(StateMachine *machine, const Input *input);
 void StateMachineUpdate(StateMachine *machine, float delta);
 void StateMachineDraw(StateMachine *machine, SDL_Renderer *renderer);
-
-#endif // !_GAMB_STATE_H

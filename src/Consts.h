@@ -1,5 +1,4 @@
-#ifndef _GAMB_CONSTS
-#define _GAMB_CONSTS
+#pragma once
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -30,5 +29,3 @@
 #define BUTTON_WIDTH 128
 #define BUTTON_HEIGHT 48
 #define BUTTON_PADDING 8
-
-#endif // _GAMB_CONSTS

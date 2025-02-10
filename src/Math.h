@@ -1,5 +1,4 @@
-#ifndef _GAMB_VEC2_H
-#define _GAMB_VEC2_H
+#pragma once
 
 #include <SDL2/SDL_log.h>
 #include <math.h>
@@ -84,5 +83,3 @@ static inline bool FApproxZero(float val, float eps)
 {
     return fabsf(val) < eps;
 }
-
-#endif // !_GAMB_VEC2_H

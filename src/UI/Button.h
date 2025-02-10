@@ -1,9 +1,9 @@
-#ifndef _GAMB_UI_BUTTON_H
-#define _GAMB_UI_BUTTON_H
+#pragma once
+
+// TODO fix all this nonsense, I hate how I did this
 
 #include "Label.h"
 #include "Palette.h"
-// #include "Rectangle.h"
 #include <stdbool.h>
 
 typedef struct
@@ -52,4 +52,3 @@ static UiButtonState DefaultPressed = {
     .Color = PaletteLevel3,
     .TextColor = PaletteBackground,
 };
-#endif // !_GAMB_UI_BUTTON_H
