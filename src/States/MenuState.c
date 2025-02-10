@@ -8,10 +8,6 @@
 #include "UI/UI.h"
 #include "Util.h"
 
-#define BUTTON_WIDTH 128
-#define BUTTON_HEIGHT 48
-#define BUTTON_PADDING 8
-
 #define BUTTON_X ((WINDOW_WIDTH - BUTTON_WIDTH) / 2.0f)
 #define PLAY_BUTTON_Y ((WINDOW_HEIGHT - BUTTON_HEIGHT - BUTTON_PADDING) / 2.0f)
 #define QUIT_BUTTON_Y ((WINDOW_HEIGHT + BUTTON_HEIGHT + BUTTON_PADDING) / 2.0f)
@@ -43,12 +39,12 @@ static void HandleEvents(SDL_Event *ev)
     WIDGET_HANDLE_EVENT(PlayButton, ev);
     WIDGET_HANDLE_EVENT(QuitButton, ev);
 
-    if (PlayButton->IsReleased)
+    if (PlayButton->IsPressed)
     {
         StateMachineTransitionTo(app->StateMachine, &GameState);
     }
 
-    else if (QuitButton->IsReleased)
+    else if (QuitButton->IsPressed)
     {
         Exit();
     }
@@ -76,20 +72,26 @@ static void Enter(App *_app)
         app = _app;
     }
 
+    SDL_Log("Entered Menu State");
+
     Title = UiLabelNewAtXY(app->Renderer, "BREAKOUT", &FontSquare, 96,
                            WINDOW_WIDTH / 2.0, WINDOW_HEIGHT / 3.0,
                            OriginCenter, PaletteForeground);
 
     UiLabel *playLabel = UiLabelNew(app->Renderer, "PLAY", &FontSquare, 32,
                                     OriginCenter, PaletteBackground);
+
     UiLabel *quitLabel = UiLabelNew(app->Renderer, "QUIT", &FontSquare, 32,
                                     OriginCenter, PaletteBackground);
 
-    PlayButton = UiButtonNew(playLabel, BUTTON_X, PLAY_BUTTON_Y, BUTTON_WIDTH,
-                             BUTTON_HEIGHT, normal, hover, pressed);
+    PlayButton =
+        UiButtonNew(playLabel, BUTTON_X, PLAY_BUTTON_Y, normal, hover, pressed);
 
-    QuitButton = UiButtonNew(quitLabel, BUTTON_X, QUIT_BUTTON_Y, BUTTON_WIDTH,
-                             BUTTON_HEIGHT, normal, hover, pressed);
+    QuitButton =
+        UiButtonNew(quitLabel, BUTTON_X, QUIT_BUTTON_Y, normal, hover, pressed);
+
+    PlayButton->base.Width = BUTTON_WIDTH;
+    QuitButton->base.Width = BUTTON_WIDTH;
 }
 
 State MenuState = {

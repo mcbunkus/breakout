@@ -9,6 +9,7 @@
 #include "Rectangle.h"
 
 #include "Fonts/Square.h"
+#include "UI/Button.h"
 #include "UI/Label.h"
 #include "UI/UI.h"
 
@@ -77,14 +78,19 @@ typedef struct
 
 typedef struct
 {
-    size_t BlockIndex;
     State State;
+    size_t BlockIndex;
 } GameReloadState;
 
 typedef struct
 {
-
-} GameOver;
+    State State;
+    App *App;
+    UiButton *PlayAgainButton;
+    UiButton *BackToMenuButton;
+    float BlockDelayTimer;
+    float BlockDelayTime;
+} GameOverState;
 
 //
 //
@@ -118,9 +124,10 @@ static void ReloadBlocksStateEnter(App *app);
 static void ReloadBlocksStateDraw(SDL_Renderer *renderer);
 static void ReloadBlocksStateUpdate(float delta);
 
-// static void GameOverStateEnter(App *app);
-// static void GameOverStateDraw(SDL_Renderer *renderer);
-// static void GameOverStateUpdate(float delta);
+static void GameOverStateEnter(App *app);
+static void GameOverStateDraw(SDL_Renderer *renderer);
+static void GameOverStateUpdate(float delta);
+static void GameOverStateHandleEvents(SDL_Event *ev);
 
 //
 //
@@ -130,7 +137,6 @@ static void ReloadBlocksStateUpdate(float delta);
 //
 //
 static void BallReset();
-static void PlayerReset();
 
 //
 //
@@ -176,6 +182,17 @@ static GameReloadState ReloadState = {
         },
 };
 
+static GameOverState GameOver = {
+
+    .State =
+        {
+            .Draw = GameOverStateDraw,
+            .HandleEvents = GameOverStateHandleEvents,
+            .Update = GameOverStateUpdate,
+            .Enter = GameOverStateEnter,
+        },
+};
+
 //
 //
 //
@@ -183,6 +200,39 @@ static GameReloadState ReloadState = {
 //
 //
 //
+
+static Lives lives = {
+    .LivesLeft = NUM_LIVES,
+    .Indicators =
+        {
+            {
+                .Color = PaletteForeground,
+                .Bounds = {.x = WINDOW_WIDTH - WINDOW_PADDING -
+                                LIVES_INDICATOR_DIM,
+                           .y = WINDOW_PADDING,
+                           .w = LIVES_INDICATOR_DIM,
+                           .h = LIVES_INDICATOR_DIM},
+            },
+            {
+                .Color = PaletteForeground,
+                .Bounds = {.x = WINDOW_WIDTH - WINDOW_PADDING -
+                                2.0f * LIVES_INDICATOR_DIM -
+                                2.0f * LIVES_INDICATOR_PADDING,
+                           .y = WINDOW_PADDING,
+                           .w = LIVES_INDICATOR_DIM,
+                           .h = LIVES_INDICATOR_DIM},
+            },
+            {
+                .Color = PaletteForeground,
+                .Bounds = {.x = WINDOW_WIDTH - WINDOW_PADDING -
+                                3.0f * LIVES_INDICATOR_DIM -
+                                4.0f * LIVES_INDICATOR_PADDING,
+                           .y = WINDOW_PADDING,
+                           .w = LIVES_INDICATOR_DIM,
+                           .h = LIVES_INDICATOR_DIM},
+            },
+        },
+};
 
 static Blocks blocks = {};
 
@@ -205,28 +255,40 @@ static Player player = {
     .SpeedLerp = 0.25f,
     .BoostSpeed = 7500.0f,
     .BoostCooldown = 0.0f,
-    .Rect = {.Color = PaletteForeground,
-             .Bounds = {.x = (WINDOW_WIDTH - PLAYER_WIDTH) / 2.0f,
-                        .y = (WINDOW_HEIGHT - (PLAYER_HEIGHT + PLAYER_PADDING)),
-                        .w = PLAYER_WIDTH,
-                        .h = PLAYER_HEIGHT}}};
+    .Rect =
+        {
+            .Color = PaletteForeground,
+            .Bounds =
+                {
+                    .x = (WINDOW_WIDTH - PLAYER_WIDTH) / 2.0f,
+                    .y = (WINDOW_HEIGHT - (PLAYER_HEIGHT + PLAYER_PADDING)),
+                    .w = PLAYER_WIDTH,
+                    .h = PLAYER_HEIGHT,
+                },
+        },
+};
 
-static Ball ball = {.Speed = BALL_INITIAL_SPEED,
-                    .Direction = {0.0, 0.0},
-                    .Rect = {.Color = PaletteForeground,
-                             .Bounds = {.x = (WINDOW_WIDTH - BALL_WIDTH) / 2.0f,
-                                        .y = BALL_START_Y,
-                                        .w = BALL_WIDTH,
-                                        .h = BALL_HEIGHT}}};
+static Ball ball = {
+    .Speed = BALL_INITIAL_SPEED,
+    .Direction = {0.0, 0.0},
+    .Rect =
+        {
+            .Color = PaletteForeground,
+            .Bounds = {.x = (WINDOW_WIDTH - BALL_WIDTH) / 2.0f,
+                       .y = BALL_START_Y,
+                       .w = BALL_WIDTH,
+                       .h = BALL_HEIGHT},
+        },
+};
 
 // just a divider line, basically
 static BackWall backWall = {
     .Rect = {
         .Color = PaletteForeground,
-        .Bounds = {.x = WINDOW_PADDING + BLOCK_PADDING / 2.0f,
+        .Bounds = {.x = WINDOW_PADDING,
                    .y =
                        BLOCKS_TOP_PADDING - BACKWALL_THICKNESS - WINDOW_PADDING,
-                   .w = WINDOW_WIDTH - WINDOW_PADDING * 2 - BLOCK_PADDING,
+                   .w = WINDOW_WIDTH - 2 * WINDOW_PADDING,
                    .h = BACKWALL_THICKNESS},
     }};
 
@@ -242,9 +304,40 @@ static void BallReset()
     ball.Rect.Bounds.y = BALL_START_Y;
 }
 
-static void PlayerReset()
+static void DrawLifeIndicators(SDL_Renderer *renderer)
 {
-    player.Rect.Bounds.x = (WINDOW_WIDTH - PLAYER_WIDTH) / 2.0f;
+
+    for (int i = 0; i < lives.LivesLeft; i++)
+    {
+        RectangleDraw(&(lives.Indicators[i]), renderer);
+    }
+}
+
+static void DrawBlocks(SDL_Renderer *renderer)
+{
+    for (size_t i = 0; i < NBLOCKS; i++)
+    {
+        if (blocks.Alive[i])
+        {
+            RectangleDraw(&(blocks.Rect[i]), renderer);
+        }
+    }
+}
+
+static void ResetGame()
+{
+    score.Score = 0;
+    UiLabelSetText(score.Label, "0");
+    UiLabelSetText(countdown.Label, "0");
+
+    player.BoostCooldown = 0.0f;
+    lives.LivesLeft = NUM_LIVES;
+    ball.Speed = BALL_INITIAL_SPEED;
+
+    for (int i = 0; i < NBLOCKS; i++)
+    {
+        blocks.Alive[i] = false;
+    }
 }
 
 //
@@ -279,16 +372,12 @@ static void ReloadBlocksStateDraw(SDL_Renderer *renderer)
 {
     RectangleDraw(&(player.Rect), renderer);
 
-    for (size_t i = 0; i < NBLOCKS; i++)
-    {
-        if (blocks.Alive[i])
-        {
-            RectangleDraw(&(blocks.Rect[i]), renderer);
-        }
-    }
+    DrawBlocks(renderer);
 
     RectangleDraw(&(backWall.Rect), renderer);
     WIDGET_DRAW(score.Label, renderer);
+
+    DrawLifeIndicators(renderer);
 }
 
 //
@@ -300,7 +389,7 @@ static void ReloadBlocksStateDraw(SDL_Renderer *renderer)
 static void CountdownStateEnter(App *_)
 {
     BallReset();
-    PlayerReset();
+    // PlayerReset();
     countdown.Time = 3.0f;
 }
 
@@ -312,6 +401,11 @@ static void CountdownStateUpdate(float delta)
         StateMachineTransitionTo(GameStateMachine, &PlayState);
     }
 
+    // lerp the player to the center while the countdown runs
+    player.Rect.Bounds.x =
+        Flerp(player.Rect.Bounds.x,
+              (WINDOW_WIDTH - player.Rect.Bounds.w) / 2.0f, 0.075);
+
     UiLabelSetText(countdown.Label, "%d", (int)(ceilf(countdown.Time)));
 }
 
@@ -319,18 +413,14 @@ static void CountdownStateDraw(SDL_Renderer *renderer)
 {
     RectangleDraw(&(player.Rect), renderer);
 
-    for (size_t i = 0; i < NBLOCKS; i++)
-    {
-        if (blocks.Alive[i])
-        {
-            RectangleDraw(&(blocks.Rect[i]), renderer);
-        }
-    }
+    DrawBlocks(renderer);
 
     RectangleDraw(&(backWall.Rect), renderer);
 
     WIDGET_DRAW(countdown.Label, renderer);
     WIDGET_DRAW(score.Label, renderer);
+
+    DrawLifeIndicators(renderer);
 }
 
 //
@@ -392,12 +482,26 @@ static void PlayStateUpdate(float delta)
         ball.Direction.x = -ball.Direction.x;
     }
 
-    // probably won't happen, but good if the ball glitches through the backwall
-    // somehow
-    if (ball.Rect.Bounds.y < 0 ||
-        (ball.Rect.Bounds.h + ball.Rect.Bounds.y) > WINDOW_HEIGHT)
+    // bounce off the backwall
+    if (ball.Rect.Bounds.y <
+            (backWall.Rect.Bounds.y + backWall.Rect.Bounds.h) &&
+        ball.Direction.y < 0.0f)
     {
         ball.Direction.y = -ball.Direction.y;
+    }
+
+    // went below the screen, player lost a life
+    if ((ball.Rect.Bounds.h + ball.Rect.Bounds.y) > WINDOW_HEIGHT)
+    {
+        lives.LivesLeft -= 1;
+        if (lives.LivesLeft <= 0)
+        {
+            StateMachineTransitionTo(GameStateMachine, &(GameOver.State));
+        }
+        else
+        {
+            StateMachineTransitionTo(GameStateMachine, &CountdownState);
+        }
     }
 
     ball.Rect.Bounds.x += ball.Direction.x * ball.Speed * delta;
@@ -412,12 +516,6 @@ static void PlayStateUpdate(float delta)
         float angle = (-3 * M_PI / 4) + (M_PI / 2) * scale;
 
         ball.Direction = Vec2UnitFromAngle(angle);
-    }
-
-    if (RectangleCheckCollision(&(ball.Rect), &(backWall.Rect)) &&
-        ball.Direction.y < 0.0f)
-    {
-        ball.Direction.y = -ball.Direction.y;
     }
 
     for (size_t i = 0; i < NBLOCKS; i++)
@@ -463,16 +561,12 @@ static void PlayStateDraw(SDL_Renderer *renderer)
     RectangleDraw(&(player.Rect), renderer);
     RectangleDraw(&(ball.Rect), renderer);
 
-    for (size_t i = 0; i < NBLOCKS; i++)
-    {
-        if (blocks.Alive[i])
-        {
-            RectangleDraw(&(blocks.Rect[i]), renderer);
-        }
-    }
+    DrawBlocks(renderer);
 
     RectangleDraw(&(backWall.Rect), renderer);
     WIDGET_DRAW(score.Label, renderer);
+
+    DrawLifeIndicators(renderer);
 }
 
 static void PlayStateHandleInput(const Input *input)
@@ -518,6 +612,53 @@ static void PlayStateHandleInput(const Input *input)
     }
 }
 
+static void GameOverStateEnter(App *app)
+{
+    GameOver.App = app;
+
+    // reuse the countdown label for the score, since it's already there doing
+    // nothing
+
+    UiLabelSetText(countdown.Label, "%d", score.Score);
+    SDL_Log("Entered Game Over State");
+}
+
+static void GameOverStateUpdate(float delta) {}
+
+static void GameOverStateHandleEvents(SDL_Event *ev)
+{
+    WIDGET_HANDLE_EVENT(GameOver.PlayAgainButton, ev);
+    WIDGET_HANDLE_EVENT(GameOver.BackToMenuButton, ev);
+
+    if (GameOver.PlayAgainButton->IsPressed)
+    {
+        ResetGame();
+        StateMachineTransitionTo(GameStateMachine, &ReloadState.State);
+    }
+
+    else if (GameOver.BackToMenuButton->IsPressed)
+    {
+        StateMachineTransitionTo(GameOver.App->StateMachine, &MenuState);
+    }
+}
+
+static void GameOverStateDraw(SDL_Renderer *renderer)
+{
+    RectangleDraw(&(player.Rect), renderer);
+    RectangleDraw(&(backWall.Rect), renderer);
+
+    WIDGET_DRAW(countdown.Label, renderer);
+    WIDGET_DRAW(GameOver.PlayAgainButton, renderer);
+    WIDGET_DRAW(GameOver.BackToMenuButton, renderer);
+
+    DrawBlocks(renderer);
+}
+
+static void GameOverStateExit(App *app)
+{
+    UiLabelSetText(countdown.Label, "0");
+}
+
 //
 //
 //
@@ -531,40 +672,57 @@ static void GameStateEnter(App *app)
 
     // setting up the blocks, UI, etc
 
+    const float buttonY = 2.0f * WINDOW_HEIGHT / 3.0f;
+    const float buttonWidth = 256.0f;
+
     countdown.Label =
         UiLabelNewAtXY(app->Renderer, "3", &FontSquare, 96, WINDOW_WIDTH / 2.0f,
                        WINDOW_HEIGHT / 2.0f, OriginCenter, PaletteForeground);
 
-    score.Label = UiLabelNewAtXY(app->Renderer, "0", &FontSquare, 32,
-                                 WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
-                                 WINDOW_PADDING * 2 - BLOCK_PADDING / 2.0f,
-                                 OriginTopLeft, PaletteForeground);
+    score.Label =
+        UiLabelNewAtXY(app->Renderer, "0", &FontSquare, 32, WINDOW_PADDING,
+                       WINDOW_PADDING, OriginTopLeft, PaletteForeground);
 
-    player.BoostCooldown = 0.0f;
-    score.Score = 0;
-    ball.Speed = BALL_INITIAL_SPEED;
+    UiLabel *playAgainLabel =
+        UiLabelNew(app->Renderer, "PLAY AGAIN", &FontSquare, 32, OriginCenter,
+                   PaletteBackground);
+    UiLabel *backToMenuLabel =
+        UiLabelNew(app->Renderer, "BACK TO MENU", &FontSquare, 32, OriginCenter,
+                   PaletteBackground);
 
-    const int blockWidth =
-        ((WINDOW_WIDTH - WINDOW_PADDING * 2) / NCOLS) - BLOCK_PADDING;
+    GameOver.PlayAgainButton = UiButtonNew(
+        playAgainLabel, ((WINDOW_WIDTH - BUTTON_PADDING) / 2.0f) - buttonWidth,
+        buttonY, DefaultNormal, DefaultHover, DefaultPressed);
 
-    const int blockHeight = 12;
+    GameOver.BackToMenuButton =
+        UiButtonNew(backToMenuLabel, ((WINDOW_WIDTH + BUTTON_PADDING) / 2.0f),
+                    buttonY, DefaultNormal, DefaultHover, DefaultPressed);
+
+    GameOver.PlayAgainButton->base.Width = buttonWidth;
+    GameOver.BackToMenuButton->base.Width = buttonWidth;
+
+    const float blockWidth = (WINDOW_WIDTH - (2.0 * WINDOW_PADDING) -
+                              ((NCOLS - 1) * BLOCK_PADDING)) /
+                             NCOLS;
+
+    const float blockHeight = 12;
 
     for (size_t row = 0; row < NROWS; row++)
     {
         for (size_t col = 0; col < NCOLS; col++)
         {
             size_t i = INDEX(row, col);
-            int xpos = WINDOW_PADDING + (BLOCK_PADDING + blockWidth) * col +
-                       BLOCK_PADDING / 2;
-            int ypos = WINDOW_PADDING + BLOCKS_TOP_PADDING +
-                       (BLOCK_PADDING + blockHeight) * row + BLOCK_PADDING / 2;
+
+            float xpos = WINDOW_PADDING + (blockWidth + BLOCK_PADDING) * col;
+            float ypos = WINDOW_PADDING + BLOCKS_TOP_PADDING +
+                         (blockHeight + BLOCK_PADDING) * row;
 
             blocks.Rect[i] = (Rectangle){
-                .Bounds = {
-                    .x = xpos, .y = ypos, .w = blockWidth, .h = blockHeight}};
-
-            // we start with the reload animation, all of these should be "dead"
-            blocks.Alive[i] = false;
+                .Bounds = {.x = xpos,
+                           .y = ypos,
+                           .w = blockWidth,
+                           .h = blockHeight},
+            };
 
             if (row < NROWS / 4)
             {
@@ -589,8 +747,21 @@ static void GameStateEnter(App *app)
         }
     }
 
+    // Initializes everything to its starting state
+    ResetGame();
+
+    // Creating the remaining tries indicators
     GameStateMachine = StateMachineCreate(app, &(ReloadState.State));
     StateMachineStart(GameStateMachine);
+}
+
+static void GameStateExit(App *app)
+{
+    StateMachineStop(GameStateMachine);
+    WIDGET_DESTROY(countdown.Label);
+    WIDGET_DESTROY(score.Label);
+    WIDGET_DESTROY(GameOver.PlayAgainButton);
+    WIDGET_DESTROY(GameOver.BackToMenuButton);
 }
 
 static void GameStateUpdate(float delta)
@@ -610,14 +781,6 @@ static void GameStateHandleInput(const Input *input)
 static void GameStateHandleEvents(SDL_Event *ev)
 {
     StateMachineHandleEvents(GameStateMachine, ev);
-}
-
-static void GameStateExit(App *app)
-{
-    StateMachineStop(GameStateMachine);
-
-    WIDGET_DESTROY(countdown.Label);
-    WIDGET_DESTROY(score.Label);
 }
 
 State GameState = {.Enter = GameStateEnter,

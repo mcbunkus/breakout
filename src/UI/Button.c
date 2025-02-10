@@ -103,16 +103,18 @@ static void UiButtonDraw(Widget *self, SDL_Renderer *renderer)
     }
 
     Rectangle background = {
-        .Bounds = {.x = self->X,
-                   .y = self->Y,
-                   .w = self->Width,
-                   .h = self->Height},
+        .Bounds =
+            {
+                .x = self->X,
+                .y = self->Y,
+                .w = self->Width,
+                .h = self->Height,
+            },
         .Color = self->Color,
     };
 
     RectangleDraw(&background, renderer);
     WIDGET_DRAW(btn->Label, renderer);
-    // UiLabelDrawToRenderer(&(btn->Label), renderer);
 }
 
 void UiButtonDestroy(Widget *self)
@@ -121,23 +123,23 @@ void UiButtonDestroy(Widget *self)
     WIDGET_DESTROY(btn->Label);
 }
 
-UiButton *UiButtonNew(UiLabel *label, float x, float y, float w, float h,
-                      UiButtonState normal, UiButtonState hover,
-                      UiButtonState pressed)
+UiButton *UiButtonNew(UiLabel *label, float x, float y, UiButtonState normal,
+                      UiButtonState hover, UiButtonState pressed)
 {
     UiButton *button = malloc(sizeof(UiButton));
 
     button->Label = label;
+    button->CurrentState = UiButtonStatesNormal;
     button->States[UiButtonStatesNormal] = normal;
     button->States[UiButtonStatesHovered] = hover;
     button->States[UiButtonStatesPressed] = pressed;
+    button->Padding = 4.0f;
 
     button->base.X = x;
     button->base.Y = y;
-    button->base.Width = w;
-    button->base.Height = h;
+    button->base.Width = label->base.Width + (2.0 * button->Padding);
+    button->base.Height = label->base.Height + (2.0 * button->Padding);
     button->base.Color = normal.Color;
-    button->CurrentState = UiButtonStatesNormal;
 
     button->base.Draw = UiButtonDraw;
     button->base.HandleEvent = UiButtonHandleEvents;

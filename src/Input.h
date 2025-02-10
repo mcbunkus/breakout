@@ -6,6 +6,7 @@
 typedef struct
 {
     const uint8_t *KeyCodes;
+
 } Input;
 
 #endif // !_GAMB_INPUT_H

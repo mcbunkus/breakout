@@ -22,7 +22,7 @@ typedef struct
     void (*Exit)(App *app);
     void (*Update)(float delta);
     void (*Draw)(SDL_Renderer *renderer);
-    void (*HandleInput)(const Input *renderer);
+    void (*HandleInput)(const Input *inputs);
     void (*HandleEvents)(SDL_Event *ev);
 } State;
 

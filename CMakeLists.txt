@@ -17,6 +17,7 @@ add_executable(gamb
   src/States/GameState.c 
   src/States/MenuState.c 
   src/UI/Button.c
+#  src/UI/VBoxContainer.c
   src/UI/Label.c
   src/UI/UI.c
   src/Util.c
