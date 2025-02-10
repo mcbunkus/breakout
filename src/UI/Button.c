@@ -134,6 +134,8 @@ UiButton *UiButtonNew(UiLabel *label, float x, float y, UiButtonState normal,
     button->States[UiButtonStatesHovered] = hover;
     button->States[UiButtonStatesPressed] = pressed;
     button->Padding = 4.0f;
+    button->IsPressed = false;
+    button->IsReleased = false;
 
     button->base.X = x;
     button->base.Y = y;
